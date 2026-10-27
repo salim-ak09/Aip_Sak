@@ -1,0 +1,2 @@
+{"timestamp":"2026-10-27T10:00:00Z","url":"http://127.0.0.1:3000","input":"127.0.0.1:3000","title":"OWASP Juice Shop","status_code":200,"webserver":"express","tech":["Node.js","Express","Angular"]}
+{"timestamp":"2026-10-27T10:00:01Z","url":"http://127.0.0.1:80","input":"127.0.0.1:80","title":"Welcome to nginx","status_code":200,"webserver":"nginx/1.24.0","tech":["Nginx"]}

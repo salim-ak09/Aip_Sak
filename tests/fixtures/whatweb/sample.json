@@ -1,0 +1,11 @@
+[
+  {
+    "target": "http://127.0.0.1:3000",
+    "http_status": 200,
+    "plugins": {
+      "Express": {"version": ["4.18.2"]},
+      "NodeJS": {},
+      "HTML5": {}
+    }
+  }
+]

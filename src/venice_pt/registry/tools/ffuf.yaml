@@ -1,0 +1,32 @@
+name: ffuf
+binary: ffuf
+version_pin: "2.1.0"
+capabilities:
+  - web_fuzzing
+  - directory_discovery
+  - parameter_discovery
+phases:
+  - enum
+risk: 1
+timeout_s: 300
+needs: []
+install:
+  - method: apt
+    pkg: ffuf
+  - method: brew
+    pkg: ffuf
+  - method: go
+    pkg: github.com/ffuf/ffuf/v2@latest
+  - method: github_release
+    url: https://github.com/ffuf/ffuf/releases/download/v2.1.0/ffuf_2.1.0_linux_amd64.tar.gz
+  - method: docker
+    image: ffuf/ffuf:latest
+check: "-V"
+output:
+  format: json
+  parser: venice_pt.parsers.ffuf:parse
+  normalizes_to:
+    - endpoint
+    - interesting
+cost_class: medium
+notes: Fast web fuzzer written in Go

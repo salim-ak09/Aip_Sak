@@ -1,0 +1,35 @@
+name: nmap
+binary: nmap
+version_pin: "7.94"
+capabilities:
+  - port_scan
+  - service_detection
+  - os_fingerprint
+phases:
+  - recon
+  - enum
+risk: 1
+timeout_s: 300
+needs:
+  - cap_net_raw
+install:
+  - method: apt
+    pkg: nmap
+  - method: dnf
+    pkg: nmap
+  - method: pacman
+    pkg: nmap
+  - method: brew
+    pkg: nmap
+  - method: docker
+    image: instrumentisto/nmap:latest
+check: "--version"
+output:
+  format: xml
+  parser: venice_pt.parsers.nmap:parse
+  normalizes_to:
+    - port
+    - service
+    - version
+cost_class: cheap
+notes: Standard network discovery scanner

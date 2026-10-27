@@ -1,0 +1,32 @@
+name: httpx
+binary: httpx
+version_pin: "1.6.0"
+capabilities:
+  - http_probe
+  - technology_detection
+  - title_grab
+phases:
+  - recon
+  - enum
+risk: 1
+timeout_s: 180
+needs: []
+install:
+  - method: brew
+    pkg: httpx
+  - method: go
+    pkg: github.com/projectdiscovery/httpx/cmd/httpx@latest
+  - method: github_release
+    url: https://github.com/projectdiscovery/httpx/releases/download/v1.6.0/httpx_1.6.0_linux_amd64.zip
+  - method: docker
+    image: projectdiscovery/httpx:latest
+check: "-version"
+output:
+  format: json
+  parser: venice_pt.parsers.httpx:parse
+  normalizes_to:
+    - service
+    - header
+    - technology
+cost_class: cheap
+notes: Fast and multi-purpose HTTP toolkit

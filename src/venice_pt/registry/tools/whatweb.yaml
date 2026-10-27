@@ -1,0 +1,27 @@
+name: whatweb
+binary: whatweb
+version_pin: "0.5.5"
+capabilities:
+  - web_fingerprint
+  - technology_detection
+phases:
+  - recon
+risk: 1
+timeout_s: 180
+needs: []
+install:
+  - method: apt
+    pkg: whatweb
+  - method: brew
+    pkg: whatweb
+  - method: docker
+    image: whatweb/whatweb:latest
+check: "--version"
+output:
+  format: json
+  parser: venice_pt.parsers.whatweb:parse
+  normalizes_to:
+    - technology
+    - version
+cost_class: cheap
+notes: Next generation web scanner that identifies technologies used on websites

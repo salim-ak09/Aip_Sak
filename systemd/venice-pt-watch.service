@@ -1,0 +1,16 @@
+[Unit]
+Description=venice-pt 24/7 Attack Surface Watch Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=venice
+WorkingDirectory=/opt/venice-pt
+ExecStart=/usr/local/bin/venice-pt watch --target 127.0.0.1 --interval 3600
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

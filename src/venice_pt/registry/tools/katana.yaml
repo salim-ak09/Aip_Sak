@@ -1,0 +1,28 @@
+name: katana
+binary: katana
+version_pin: "1.1.0"
+capabilities:
+  - web_crawling
+  - endpoint_discovery
+phases:
+  - enum
+risk: 1
+timeout_s: 300
+needs: []
+install:
+  - method: brew
+    pkg: katana
+  - method: go
+    pkg: github.com/projectdiscovery/katana/cmd/katana@latest
+  - method: github_release
+    url: https://github.com/projectdiscovery/katana/releases/download/v1.1.0/katana_1.1.0_linux_amd64.zip
+  - method: docker
+    image: projectdiscovery/katana:latest
+check: "-version"
+output:
+  format: json
+  parser: venice_pt.parsers.katana:parse
+  normalizes_to:
+    - endpoint
+cost_class: medium
+notes: Next-generation crawling and spidering framework

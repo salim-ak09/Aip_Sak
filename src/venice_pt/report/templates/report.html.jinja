@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Penetration Test Report - {{ engagement_name }}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            background: #ffffff;
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+        .header {
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 28px;
+        }
+        .header .meta {
+            color: #64748b;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-critical { background: #fee2e2; color: #991b1b; }
+        .badge-high { background: #ffedd5; color: #9a3412; }
+        .badge-medium { background: #fef9c3; color: #854d0e; }
+        .badge-low { background: #dbeafe; color: #1e40af; }
+        .badge-info { background: #f1f5f9; color: #475569; }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section h2 {
+            font-size: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 8px;
+            color: #0f172a;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .metric-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        .metric-card .num {
+            font-size: 28px;
+            font-weight: bold;
+            color: #0f172a;
+        }
+        .metric-card .label {
+            font-size: 13px;
+            color: #64748b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background: #f8fafc;
+            font-size: 13px;
+            color: #475569;
+        }
+        .finding-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #ffffff;
+        }
+        .finding-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .finding-meta {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+        pre {
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Autonomous Penetration Test Report</h1>
+        <div class="meta">
+            Target: <strong>{{ target }}</strong> | Engagement: <strong>{{ engagement_name }}</strong> | Generated: <strong>{{ generated_at }}</strong>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Executive Summary</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="num">{{ risk_matrix.total }}</div>
+                <div class="label">Total Findings</div>
+            </div>
+            <div class="metric-card">
+                <div class="num" style="color: #16a34a;">{{ risk_matrix.verified }}</div>
+                <div class="label">Verified TPs</div>
+            </div>
+            <div class="metric-card">
+                <div class="num" style="color: #dc2626;">{{ risk_matrix.severity_counts.critical + risk_matrix.severity_counts.high }}</div>
+                <div class="label">Critical & High</div>
+            </div>
+            <div class="metric-card">
+                <div class="num">{{ duration_minutes }} min</div>
+                <div class="label">Duration</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Verified Findings</h2>
+        {% for f in verified_findings %}
+        <div class="finding-card">
+            <div class="finding-title">
+                <span>{{ f.title or f.cls }}</span>
+                <span class="badge badge-{{ f.severity|lower }}">{{ f.severity }}</span>
+            </div>
+            <div class="finding-meta">
+                Target: <code>{{ f.target }}</code> | Confidence: <strong>{{ f.confidence }}</strong> | CVSS: <strong>{{ f.cvss_score or 'N/A' }}</strong>
+            </div>
+            <p>{{ f.description }}</p>
+            {% if f.evidence %}
+            <h4>Evidence / Proof of Concept:</h4>
+            <pre>{{ f.evidence|tojson(indent=2) if f.evidence is mapping or f.evidence is sequence else f.evidence }}</pre>
+            {% endif %}
+            {% if f.remediation %}
+            <h4>Remediation:</h4>
+            <p>{{ f.remediation }}</p>
+            {% endif %}
+        </div>
+        {% else %}
+        <p>No verified vulnerabilities discovered.</p>
+        {% endfor %}
+    </div>
+
+    {% if unverified_findings %}
+    <div class="section">
+        <h2>Appendix: Unconfirmed / Demoted Findings</h2>
+        <p>The following findings were detected during automated scanning but could not be independently confirmed by validation oracles. Confidence scores have been adjusted accordingly.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Target</th>
+                    <th>Severity</th>
+                    <th>Adjusted Confidence</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in unverified_findings %}
+                <tr>
+                    <td>{{ f.title or f.cls }}</td>
+                    <td><code>{{ f.target }}</code></td>
+                    <td><span class="badge badge-{{ f.severity|lower }}">{{ f.severity }}</span></td>
+                    <td>{{ f.confidence }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</body>
+</html>

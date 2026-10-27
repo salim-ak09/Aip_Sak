@@ -1,0 +1,28 @@
+name: dnsx
+binary: dnsx
+version_pin: "1.2.1"
+capabilities:
+  - dns_resolution
+  - dns_bruteforce
+phases:
+  - recon
+risk: 0
+timeout_s: 180
+needs: []
+install:
+  - method: brew
+    pkg: dnsx
+  - method: go
+    pkg: github.com/projectdiscovery/dnsx/cmd/dnsx@latest
+  - method: github_release
+    url: https://github.com/projectdiscovery/dnsx/releases/download/v1.2.1/dnsx_1.2.1_linux_amd64.zip
+  - method: docker
+    image: projectdiscovery/dnsx:latest
+check: "-version"
+output:
+  format: json
+  parser: venice_pt.parsers.dnsx:parse
+  normalizes_to:
+    - dns_record
+cost_class: cheap
+notes: Fast and multi-purpose DNS toolkit allow to run multiple DNS queries

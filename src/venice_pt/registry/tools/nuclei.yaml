@@ -1,0 +1,30 @@
+name: nuclei
+binary: nuclei
+version_pin: "3.2.9"
+capabilities:
+  - vulnerability_scan
+  - misconfig_scan
+  - template_matching
+phases:
+  - vuln_scan
+risk: 1
+timeout_s: 600
+needs: []
+install:
+  - method: brew
+    pkg: nuclei
+  - method: go
+    pkg: github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
+  - method: github_release
+    url: https://github.com/projectdiscovery/nuclei/releases/download/v3.2.9/nuclei_3.2.9_linux_amd64.zip
+  - method: docker
+    image: projectdiscovery/nuclei:latest
+check: "-version"
+output:
+  format: json
+  parser: venice_pt.parsers.nuclei:parse
+  normalizes_to:
+    - finding
+    - interesting
+cost_class: medium
+notes: Fast and customizable vulnerability scanner based on simple YAML DSL

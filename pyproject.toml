@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/venice_pt"]
+
+[project]
+name = "aip-sak"
+version = "0.1.0"
+description = "AIP_SAK — Autonomous AI Pentest Platform"
+readme = "docs/SPEC.md"
+requires-python = ">=3.12"
+dependencies = [
+    "typer>=0.12.0",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.2.0",
+    "structlog>=24.1.0",
+    "rich>=13.7.0",
+    "sqlmodel>=0.0.18",
+    "jinja2>=3.1.3",
+    "httpx>=0.27.0",
+    "pyyaml>=6.0.1",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
+    "mypy>=1.9.0",
+    "types-PyYAML>=6.0.12",
+]
+
+[project.scripts]
+aip-sak = "venice_pt.main_cli:app"
+AIP_SAK = "venice_pt.main_cli:app"
+venice-pt = "venice_pt.main_cli:app"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+warn_return_any = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "venice_pt.contracts.*",
+    "venice_pt.exec.*",
+    "venice_pt.knowledge.*",
+    "venice_pt.brain.*",
+]
+strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]

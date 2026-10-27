@@ -1,0 +1,24 @@
+{
+  "commandline": "ffuf -u http://127.0.0.1:3000/FUZZ -w wordlist.txt -o sample.json",
+  "time": "2026-10-27T10:05:00Z",
+  "results": [
+    {
+      "input": {"FUZZ": "api"},
+      "position": 1,
+      "status": 200,
+      "length": 1542,
+      "words": 120,
+      "lines": 34,
+      "url": "http://127.0.0.1:3000/api"
+    },
+    {
+      "input": {"FUZZ": "admin"},
+      "position": 2,
+      "status": 403,
+      "length": 312,
+      "words": 18,
+      "lines": 8,
+      "url": "http://127.0.0.1:3000/admin"
+    }
+  ]
+}

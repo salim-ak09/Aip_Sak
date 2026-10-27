@@ -1,0 +1,29 @@
+name: subfinder
+binary: subfinder
+version_pin: "2.6.6"
+capabilities:
+  - subdomain_enum
+  - passive_recon
+phases:
+  - recon
+risk: 0
+timeout_s: 300
+needs: []
+install:
+  - method: brew
+    pkg: subfinder
+  - method: go
+    pkg: github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+  - method: github_release
+    url: https://github.com/projectdiscovery/subfinder/releases/download/v2.6.6/subfinder_2.6.6_linux_amd64.zip
+  - method: docker
+    image: projectdiscovery/subfinder:latest
+check: "-version"
+output:
+  format: json
+  parser: venice_pt.parsers.subfinder:parse
+  normalizes_to:
+    - dns_record
+    - asset
+cost_class: cheap
+notes: Fast passive subdomain enumeration tool

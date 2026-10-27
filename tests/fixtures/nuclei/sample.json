@@ -1,0 +1,2 @@
+{"template-id":"exposed-git-config","info":{"name":"Git Config Exposure","severity":"medium","description":".git/config was found exposed","tags":["git","exposure"]},"matched-at":"http://127.0.0.1:3000/.git/config","type":"http","host":"127.0.0.1"}
+{"template-id":"swagger-api-docs","info":{"name":"Swagger UI API Docs","severity":"info","description":"Swagger UI was detected","tags":["api","swagger"]},"matched-at":"http://127.0.0.1:3000/api-docs","type":"http","host":"127.0.0.1"}
