@@ -53,11 +53,12 @@ def list_engagements() -> list[dict[str, Any]]:
 
 @router.post("", dependencies=[Depends(verify_token)], status_code=201)
 def create_engagement(payload: EngagementCreate) -> dict[str, Any]:
+    from venice_pt.cli.init_cmd import init_engagement
     eng_dir = Path("engagements") / payload.name
     if eng_dir.exists():
         raise HTTPException(status_code=400, detail="Engagement already exists")
 
-    eng_dir.mkdir(parents=True, exist_ok=True)
+    init_engagement(name=payload.name, target=payload.target)
     state_file = eng_dir / "state.json"
     initial_state = {
         "engagement": payload.name,
@@ -65,7 +66,18 @@ def create_engagement(payload: EngagementCreate) -> dict[str, Any]:
         "profile": payload.profile,
         "risk_level": payload.risk_level,
         "phase": "scope",
+        "status": "ready",
         "findings": [],
+        "operator_instructions": [],
+        "chat_history": [
+            {
+                "sender": "ai_agent",
+                "message": (
+                    f"AIP_SAK Agent online. Engagement initialized for {payload.target}. "
+                    "Ready to execute autonomous assessment or receive operator instructions."
+                ),
+            }
+        ],
     }
     state_file.write_text(json.dumps(initial_state, indent=2), encoding="utf-8")
 
@@ -74,6 +86,45 @@ def create_engagement(payload: EngagementCreate) -> dict[str, Any]:
         "engagement": payload.name,
         "target": payload.target,
     }
+
+
+@router.post("/{name}/launch", dependencies=[Depends(verify_token)])
+async def launch_engagement(name: str) -> dict[str, Any]:
+    """Starts the autonomous penetration test engine for an engagement in background."""
+    import asyncio
+
+    from venice_pt.cli.run_cmd import run_engagement
+
+    eng_dir = Path("engagements") / name
+    if not eng_dir.exists():
+        raise HTTPException(status_code=404, detail="Engagement not found")
+
+    state_file = eng_dir / "state.json"
+    target = "http://127.0.0.1:3000"
+    risk_str = "safe"
+    if state_file.exists():
+        try:
+            data = json.loads(state_file.read_text(encoding="utf-8"))
+            target = data.get("target", target)
+            risk_int = data.get("risk_level", 1)
+            risk_map = {0: "passive", 1: "safe", 2: "intrusive", 3: "destructive"}
+            risk_str = risk_map.get(risk_int, "safe")
+            data["status"] = "running"
+            state_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+    # Launch autonomous agent asynchronously in background task
+    asyncio.create_task(
+        run_engagement(
+            target=target,
+            engagement_name=name,
+            risk=risk_str,
+            budget=5.0,
+        )
+    )
+
+    return {"status": "launched", "engagement": name, "target": target}
 
 
 @router.get("/{name}", dependencies=[Depends(verify_token)])

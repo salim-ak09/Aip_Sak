@@ -59,7 +59,7 @@ def run_doctor(json_output: bool = False, install_missing: bool = False) -> int:
         return 0 if missing_count == 0 else 1
 
     # Rich table output
-    table = Table(title="Venice-PT Toolchain Diagnostics")
+    table = Table(title="aip_Sak Toolchain Diagnostics")
     table.add_column("Capability", style="cyan")
     table.add_column("Tool", style="bold magenta")
     table.add_column("Status", justify="center")

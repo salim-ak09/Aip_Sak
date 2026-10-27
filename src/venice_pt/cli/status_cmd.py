@@ -26,7 +26,7 @@ def show_status(engagement_slug: str | None = None) -> None:
         console.print("[bold yellow]No active or past engagements found.[/bold yellow]")
         return
 
-    table = Table(title="Venice-PT Engagement Status")
+    table = Table(title="aip_Sak Engagement Status")
     table.add_column("Engagement", style="bold cyan")
     table.add_column("Status", justify="center")
     table.add_column("Current Phase", style="magenta")

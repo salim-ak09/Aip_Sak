@@ -38,6 +38,7 @@ class PlannerEngine:
         available_tools: list[ToolSpec],
         already_run_tools: set[str],
         risk_ceiling: Risk = Risk.SAFE,
+        operator_instructions: list[str] | None = None,
     ) -> Decision:
         # Check budget governor first
         if self.budget.is_exceeded():
@@ -61,6 +62,7 @@ class PlannerEngine:
             tools=[t for t in available_tools if t.name not in already_run_tools],
             graph_render=graph_text,
             unexplored=unexplored,
+            operator_instructions=operator_instructions or [],
         )
 
         messages = [

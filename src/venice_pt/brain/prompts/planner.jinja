@@ -19,6 +19,14 @@ Unexplored Surface Targets:
 - [{{ u.type }}] {{ u.target }} (key: {{ u.key }})
 {% endfor %}
 
+{% if operator_instructions %}
+Operator Directives & Chat Orders:
+{% for order in operator_instructions %}
+- {{ order }}
+{% endfor %}
+(PRIORITIZE operator directives while staying strictly within authorized scope and risk ceiling)
+{% endif %}
+
 Instructions:
 Emit a valid JSON object matching the Decision schema.
 {

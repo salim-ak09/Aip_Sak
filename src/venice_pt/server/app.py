@@ -17,14 +17,14 @@ logger = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    logger.info("server_startup", service="venice-pt-api")
+    logger.info("server_startup", service="aip_Sak-api")
     yield
-    logger.info("server_shutdown", service="venice-pt-api")
+    logger.info("server_shutdown", service="aip_Sak-api")
 
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="venice-pt API",
+        title="aip_Sak API",
         version="0.1.0",
         description="Autonomous AI Pentest Platform - REST & WebSocket Control API",
         lifespan=lifespan,
@@ -44,7 +44,7 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     def health_check() -> dict[str, str]:
-        return {"status": "ok", "service": "venice-pt"}
+        return {"status": "ok", "service": "aip_Sak"}
 
     @app.websocket("/ws")
     async def ws_route(websocket: WebSocket, since: str | None = None) -> None:

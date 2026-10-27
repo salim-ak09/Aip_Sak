@@ -53,7 +53,7 @@ def test_sarif_export() -> None:
     assert sarif["version"] == "2.1.0"
     assert len(sarif["runs"]) == 1
     driver = sarif["runs"][0]["tool"]["driver"]
-    assert driver["name"] == "venice-pt"
+    assert driver["name"] == "aip_Sak"
     assert len(driver["rules"]) == 1
     assert driver["rules"][0]["id"] == "sqli"
 

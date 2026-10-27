@@ -14,7 +14,7 @@ def list_tools_command() -> None:
     resolver = Resolver()
     tools = registry.list_tools()
 
-    table = Table(title="Venice-PT Available Tool Catalogue")
+    table = Table(title="aip_Sak Available Tool Catalogue")
     table.add_column("Tool", style="bold cyan")
     table.add_column("Binary", style="magenta")
     table.add_column("Phases", style="green")

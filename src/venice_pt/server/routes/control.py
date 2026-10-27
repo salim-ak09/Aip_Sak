@@ -40,6 +40,23 @@ async def execute_control(cmd: ControlCommand) -> dict[str, Any]:
         state["status"] = "running"
     elif action == "abort":
         state["status"] = "aborted"
+    elif action == "chat":
+        # Human agent communication: inject order/question into operator instructions queue
+        message = str(cmd.details.get("message", "")).strip()
+        if message:
+            queue = state.setdefault("operator_instructions", [])
+            queue.append(message)
+            chat_history = state.setdefault("chat_history", [])
+            chat_history.append({"sender": "operator", "message": message})
+
+            # Autonomous agent acknowledged order/inquiry
+            curr_phase = state.get("phase", "recon")
+            agent_reply = (
+                f"Order received and incorporated into planner objectives: '{message}'. "
+                f"Currently optimizing attack path in phase [{curr_phase.upper()}]."
+            )
+            chat_history.append({"sender": "ai_agent", "message": agent_reply})
+            cmd.details["agent_reply"] = agent_reply
     elif action in ("approve", "reject"):
         approvals = state.setdefault("approvals", {})
         target_item = cmd.details.get("item_id", "default")
@@ -58,4 +75,9 @@ async def execute_control(cmd: ControlCommand) -> dict[str, Any]:
     }
     await manager.record_and_broadcast(control_event)
 
-    return {"status": "ok", "action": action, "engagement": cmd.engagement}
+    return {
+        "status": "ok",
+        "action": action,
+        "engagement": cmd.engagement,
+        "details": cmd.details,
+    }

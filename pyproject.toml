@@ -37,7 +37,7 @@ dev = [
 [project.scripts]
 aip-sak = "venice_pt.main_cli:app"
 AIP_SAK = "venice_pt.main_cli:app"
-venice-pt = "venice_pt.main_cli:app"
+aip_Sak = "venice_pt.main_cli:app"
 
 [tool.ruff]
 line-length = 100

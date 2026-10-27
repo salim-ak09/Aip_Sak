@@ -25,12 +25,12 @@ The maintainers and contributors assume no liability for misuse, unauthorized ac
 
 ## 3. Reporting a Security Vulnerability
 
-We treat the security of `venice-pt` with the highest priority. If you discover a security flaw, sandbox escape, scope bypass, or vulnerability within the platform, please disclose it responsibly.
+We treat the security of `aip_Sak` with the highest priority. If you discover a security flaw, sandbox escape, scope bypass, or vulnerability within the platform, please disclose it responsibly.
 
 ### Disclosure Process
 - **Do NOT file a public issue** on GitHub.
 - Submit a detailed vulnerability report via encrypted email to:
-  `security@venice-pt.internal` or via our coordinated disclosure portal.
+  `security@aip_Sak.internal` or via our coordinated disclosure portal.
 - Include:
   - Description of the vulnerability and attack vector.
   - Step-by-step reproduction instructions or Proof of Concept (PoC).

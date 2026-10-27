@@ -1,4 +1,4 @@
-# Dockerfile for venice-pt Autonomous AI Pentest Platform
+# Dockerfile for aip_Sak Autonomous AI Pentest Platform
 FROM python:3.12-slim AS builder
 
 WORKDIR /build
@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin/venice-pt /usr/local/bin/venice-pt
+COPY --from=builder /usr/local/bin/aip_Sak /usr/local/bin/aip_Sak
 
 # Security hardening: run as non-root
 RUN useradd -m -u 1000 venice && \
@@ -34,5 +34,5 @@ RUN useradd -m -u 1000 venice && \
 USER venice
 ENV PATH="/usr/local/bin:${PATH}"
 
-ENTRYPOINT ["venice-pt"]
+ENTRYPOINT ["aip_Sak"]
 CMD ["--help"]

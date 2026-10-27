@@ -9,7 +9,7 @@ from venice_pt.contracts.events import CONTRACT_VERSION
 
 def generate_contracts_doc() -> str:
     lines: list[str] = [
-        "# Venice-PT Data Contracts Reference",
+        "# aip_Sak Data Contracts Reference",
         "",
         f"**Contract Version:** `{CONTRACT_VERSION}` (FROZEN)",
         "",

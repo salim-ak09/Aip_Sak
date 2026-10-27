@@ -60,7 +60,7 @@ These are frozen. Antigravity must not "improve" them without asking.
 # PART 2 — Repo skeleton
 
 ```
-venice-pt/
+aip_Sak/
 ├── AGENTS.md
 ├── Makefile
 ├── pyproject.toml
@@ -346,7 +346,7 @@ Each phase has a **Gate**: a single command that must pass. Antigravity may not 
 
 **Makefile targets:** `setup`, `lint`, `typecheck`, `test`, `gate`, `lab-up`, `lab-down`, `test-int`, `doctor`, `fmt`.
 
-**Gate:** `make gate` exits 0. `venice-pt --version` prints semver. `venice-pt --help` lists subcommands.
+**Gate:** `make gate` exits 0. `aip_Sak --version` prints semver. `aip_Sak --help` lists subcommands.
 
 ---
 
@@ -376,13 +376,13 @@ Each phase has a **Gate**: a single command that must pass. Antigravity may not 
 
 **Tests:** append 10k events < 1s; chain walk correctness; projection determinism (same log → same output); bus fan-out to 3 subscribers.
 
-**Gate:** `venice-pt replay --demo` reconstructs state; `make gate` passes.
+**Gate:** `aip_Sak replay --demo` reconstructs state; `make gate` passes.
 
 ---
 
 ## P3 — Tool registry and bootstrap resolver *(parallel with P2)*
 
-**Goal:** `venice-pt doctor` on a clean machine installs everything and proves it.
+**Goal:** `aip_Sak doctor` on a clean machine installs everything and proves it.
 
 **Files:** `registry/schema.py`, `registry/loader.py`, `registry/tools/*.yaml`, `bootstrap/*`.
 
@@ -398,7 +398,7 @@ Each phase has a **Gate**: a single command that must pass. Antigravity may not 
 
 **Tests:** fake `shutil.which` to simulate missing tools; assert fallback ordering; assert lockfile written; assert second run is a no-op under 2s.
 
-**Gate:** in a fresh `ubuntu:24.04` container, `venice-pt doctor` installs all 8 and exits 0. Running twice: no-op.
+**Gate:** in a fresh `ubuntu:24.04` container, `aip_Sak doctor` installs all 8 and exits 0. Running twice: no-op.
 
 ---
 
@@ -418,7 +418,7 @@ Each phase has a **Gate**: a single command that must pass. Antigravity may not 
 
 **Tests:** timeout kills the process; scope violation blocked; unknown flag dropped; flag schema cached after one call; streamed events arrive in order.
 
-**Gate:** `venice-pt exec --tool nmap --args "-sV -p 22,80" --target 127.0.0.1` produces events, artifacts, parsed `None`, exit 0.
+**Gate:** `aip_Sak exec --tool nmap --args "-sV -p 22,80" --target 127.0.0.1` produces events, artifacts, parsed `None`, exit 0.
 
 ---
 
@@ -449,7 +449,7 @@ Each phase has a **Gate**: a single command that must pass. Antigravity may not 
 
 **Tasks:** `~/.venicept/config.toml` via pydantic-settings; engagement dirs `engagements/<slug>/` with `scope.yaml`, `events.db`, `artifacts/`, `state.json`; `run --target X --profile web --risk safe --budget 5` starts an engagement; graceful Ctrl-C → checkpoint; `status` shows live progress via Rich.
 
-**Gate:** `venice-pt init && venice-pt run --target http://localhost:3000 --phases recon,enum` completes and writes findings to the graph. Ctrl-C mid-run then `run --resume` continues.
+**Gate:** `aip_Sak init && aip_Sak run --target http://localhost:3000 --phases recon,enum` completes and writes findings to the graph. Ctrl-C mid-run then `run --resume` continues.
 
 ---
 
@@ -468,7 +468,7 @@ Each phase has a **Gate**: a single command that must pass. Antigravity may not 
 
 **Tests:** FSM reaches REPORT with LLM stubbed out; loop guard fires; no-progress detector advances; checkpoint/resume byte-identical state.
 
-**Gate:** `venice-pt run --no-llm --target http://localhost:3000` produces a complete run with findings and a stub report. **This gate is the project's backbone.**
+**Gate:** `aip_Sak run --no-llm --target http://localhost:3000` produces a complete run with findings and a stub report. **This gate is the project's backbone.**
 
 ---
 
@@ -488,7 +488,7 @@ Each phase has a **Gate**: a single command that must pass. Antigravity may not 
 
 **Tests:** planner output validates against schema with a mocked LLM; malformed JSON → repair retry then fallback to static router; budget cap halts; model downgrade triggers at threshold.
 
-**Gate:** `venice-pt run --target http://localhost:3000 --budget 2` finds ≥ 3 findings the `--no-llm` run missed. Cost ≤ $2.
+**Gate:** `aip_Sak run --target http://localhost:3000 --budget 2` finds ≥ 3 findings the `--no-llm` run missed. Cost ≤ $2.
 
 ---
 
@@ -533,7 +533,7 @@ Each phase has a **Gate**: a single command that must pass. Antigravity may not 
 
 **WS protocol:** server → client `{type:"event", data:Event}`; client → server `{type:"control", action:...}`. Reconnect with `since=<last_event_id>` for gap-free resume.
 
-**Gate:** `venice-pt serve` then a Python test client connects over WS, receives live events from a running engagement, sends pause, and the engagement pauses.
+**Gate:** `aip_Sak serve` then a Python test client connects over WS, receives live events from a running engagement, sends pause, and the engagement pauses.
 
 ---
 
@@ -590,7 +590,7 @@ Each phase has a **Gate**: a single command that must pass. Antigravity may not 
 - `cve_match.py`: NVD/OSV/GitHub advisory mirror, semantic version ranges, reachability check, exploitability verdict
 - `logs.py`: tail nginx/apache access+error logs, baseline, flag 404/500 spikes, traversal attempts, scanner UAs, per-IP floods
 - `alerts.py`: webhook/Telegram/Slack/email; delta-only; dedupe + suppression windows
-- `systemd/venice-pt-watch.service`
+- `systemd/aip_Sak-watch.service`
 - Optional output: generated ModSecurity/Coraza rules + nginx/Cloudflare snippets from findings
 
 **Gate:** add a target, inject a change (new subdomain + changed header + new endpoint), watch service alerts within one cycle with correct delta, and does not re-scan unchanged surface.
@@ -601,7 +601,7 @@ Each phase has a **Gate**: a single command that must pass. Antigravity may not 
 
 **Tasks:** `pipx`-installable; Docker image; `RUNBOOK.md`; config reference; upgrade/migration path for the event DB; scope-allowlist fuzz test; crash-resume fuzz test; secrets in keyring/`age`; signed audit log; `--dry-run`; performance pass (10k events, 500 findings → UI under 2s); coverage ≥ 75% on `contracts/`, `exec/`, `knowledge/`, `brain/`.
 
-**Gate:** fresh machine → `pipx install` → `venice-pt doctor` → `venice-pt run` against a real external target → PDF report. No manual steps.
+**Gate:** fresh machine → `pipx install` → `aip_Sak doctor` → `aip_Sak run` against a real external target → PDF report. No manual steps.
 
 ---
 
@@ -647,7 +647,7 @@ Add manifests in this order. Each needs manifest + parser + fixture + test.
 # AGENTS.md
 
 ## Project
-venice-pt — autonomous AI pentest platform. Linux only. Python 3.12.
+aip_Sak — autonomous AI pentest platform. Linux only. Python 3.12.
 
 ## Commands
 - `make setup`     install dev deps

@@ -1,7 +1,7 @@
-# venice-pt System Architecture
+# aip_Sak System Architecture
 
 ## Overview
-`venice-pt` is an autonomous, deterministic-first AI penetration testing platform built in Python 3.12. It combines strict frozen contract schemas, an immutable SQLite event log, an isolated subprocess execution runner, modular parsers and knowledge graph, an 8-phase finite state machine with LLM decision synthesis, independent verification oracles, and real-time WebSocket dashboard streaming.
+`aip_Sak` is an autonomous, deterministic-first AI penetration testing platform built in Python 3.12. It combines strict frozen contract schemas, an immutable SQLite event log, an isolated subprocess execution runner, modular parsers and knowledge graph, an 8-phase finite state machine with LLM decision synthesis, independent verification oracles, and real-time WebSocket dashboard streaming.
 
 ```
        +-------------------------------------------------------------+

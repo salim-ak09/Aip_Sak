@@ -5,7 +5,7 @@ from typing import Any
 
 def export_sarif(
     findings: list[dict[str, Any]],
-    tool_name: str = "venice-pt",
+    tool_name: str = "aip_Sak",
     version: str = "0.1.0",
 ) -> dict[str, Any]:
     """Generates an OASIS SARIF v2.1.0 compliant dictionary for findings."""

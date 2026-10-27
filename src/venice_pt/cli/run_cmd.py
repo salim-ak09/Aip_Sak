@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 
 from rich.console import Console
 
@@ -103,6 +104,24 @@ async def run_engagement(
 
     try:
         while not fsm.is_finished():
+            # Check state.json for operator pause or instructions
+            operator_instructions: list[str] = []
+            if chk_path.exists():
+                try:
+                    state_data = json.loads(chk_path.read_text(encoding="utf-8"))
+                    if state_data.get("status") == "paused":
+                        console.print("[yellow]Engagement paused by operator. Waiting...[/yellow]")
+                        while state_data.get("status") == "paused":
+                            await asyncio.sleep(1.0)
+                            state_data = json.loads(chk_path.read_text(encoding="utf-8"))
+                        console.print("[green]Engagement resumed by operator.[/green]")
+                    if state_data.get("status") == "aborted":
+                        console.print("[red]Engagement aborted by operator.[/red]")
+                        break
+                    operator_instructions = state_data.get("operator_instructions", [])
+                except Exception:
+                    pass
+
             current_phase = fsm.state.current_phase
             p_name = current_phase.value.upper()
             console.print(f"[bold cyan]>>> Entering Phase: {p_name}[/bold cyan]")
@@ -132,6 +151,7 @@ async def run_engagement(
                     available_tools=registry.list_tools(),
                     already_run_tools=fsm.state.tools_run_in_phase,
                     risk_ceiling=risk_ceiling,
+                    operator_instructions=operator_instructions,
                 )
 
             # Record thought / plan events
@@ -235,7 +255,7 @@ async def run_engagement(
         # Generate stub report output
         report_file = eng_dir / "report_stub.txt"
         report_content = (
-            f"Venice-PT Assessment Report for {target}\n"
+            f"aip_Sak Assessment Report for {target}\n"
             f"Engagement: {slug}\n"
             f"Total Facts: {graph.count()}\n"
             f"Total Tool Calls: {fsm.state.total_tool_calls}\n"
@@ -269,5 +289,5 @@ async def run_engagement(
         chk.save(chk_path)
         console.print(
             f"[bold yellow]Engagement paused. Resume with: "
-            f"venice-pt run --resume --target {target}[/bold yellow]"
+            f"aip_Sak run --resume --target {target}[/bold yellow]"
         )

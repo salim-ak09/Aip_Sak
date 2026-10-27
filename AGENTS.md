@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project
-venice-pt — autonomous AI pentest platform. Linux only. Python 3.12.
+aip_Sak — autonomous AI pentest platform. Linux only. Python 3.12.
 
 ## Commands
 - `make setup`     install dev deps
