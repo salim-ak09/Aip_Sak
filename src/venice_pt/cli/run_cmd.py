@@ -38,8 +38,25 @@ async def run_engagement(
     phases_filter: str | None = None,
     resume: bool = False,
     no_llm: bool = False,
+    provider: str | None = None,
 ) -> None:
-    slug = slugify(engagement_name or target)
+    # Check if any existing engagement matches target when name not specified
+    if engagement_name:
+        slug = slugify(engagement_name)
+    else:
+        matched_slug = None
+        if config.engagements_dir.exists():
+            for p in config.engagements_dir.iterdir():
+                if p.is_dir() and (p / "scope.yaml").exists():
+                    try:
+                        raw_yaml = (p / "scope.yaml").read_text(encoding="utf-8")
+                        if target in raw_yaml or target.rstrip("/") in raw_yaml:
+                            matched_slug = p.name
+                            break
+                    except Exception:
+                        pass
+        slug = matched_slug or slugify(target)
+
     eng_dir = config.engagements_dir / slug
 
     if not eng_dir.exists():
@@ -58,7 +75,11 @@ async def run_engagement(
     budget_gov = BudgetGovernor(max_budget_usd=budget)
     fsm = PentestFSM()
 
-    llm_client = None if no_llm else OpenAICompatibleLLMClient(budget_governor=budget_gov)
+    llm_client = (
+        None
+        if no_llm
+        else OpenAICompatibleLLMClient(provider=provider, budget_governor=budget_gov)
+    )
     planner = PlannerEngine(llm_client=llm_client, router=router, budget=budget_gov)
     interpreter = Interpreter(llm_client=llm_client)
 
@@ -82,12 +103,22 @@ async def run_engagement(
         if checkpoint:
             fsm.state = checkpoint.to_phase_state()
             budget_gov.total_spent_usd = checkpoint.budget_spent_usd
+            # When explicitly resuming from terminal, mark status as running
+            checkpoint.status = "running"
+            checkpoint.save(chk_path)
             console.print(
                 f"[bold green]Resuming engagement {slug} from phase:[/bold green] "
                 f"{fsm.state.current_phase.value}"
             )
     else:
-        # Initial engagement start event
+        # Starting or restarting engagement
+        if chk_path.exists():
+            try:
+                state_data = json.loads(chk_path.read_text(encoding="utf-8"))
+                state_data["status"] = "running"
+                chk_path.write_text(json.dumps(state_data, indent=2), encoding="utf-8")
+            except Exception:
+                pass
         e_start = Event(
             engagement_id=slug,
             phase=Phase.SCOPE,
@@ -101,6 +132,16 @@ async def run_engagement(
     # Automatically advance past SCOPE to start active exploration
     if fsm.state.current_phase == Phase.SCOPE:
         fsm.advance_phase()
+
+    # Ensure status is running at start of execution loop
+    if chk_path.exists():
+        try:
+            curr_state = json.loads(chk_path.read_text(encoding="utf-8"))
+            if curr_state.get("status") == "paused":
+                curr_state["status"] = "running"
+                chk_path.write_text(json.dumps(curr_state, indent=2), encoding="utf-8")
+        except Exception:
+            pass
 
     try:
         while not fsm.is_finished():

@@ -18,8 +18,10 @@ class VeniceConfig(BaseSettings):
     engagements_dir: Path = Field(default_factory=lambda: Path("engagements"))
     default_risk_ceiling: int = 1
     default_budget_usd: float = 5.0
+    llm_provider: str = "openai"  # openai, gemini, ollama, custom
     llm_api_base: str = "https://api.openai.com/v1"
     llm_api_key: str | None = None
+    gemini_api_key: str | None = None
     default_model: str = "gpt-4o"
 
     def ensure_directories(self) -> None:

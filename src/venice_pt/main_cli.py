@@ -98,6 +98,9 @@ def run(
     no_llm: bool = typer.Option(
         False, "--no-llm", help="Run with deterministic static rules only"
     ),
+    provider: str | None = typer.Option(
+        None, "--provider", help="LLM provider: openai, gemini, ollama, or custom"
+    ),
 ) -> None:
     """Run an automated pentest engagement."""
     from venice_pt.cli.run_cmd import run_engagement
@@ -112,6 +115,7 @@ def run(
             phases_filter=phases,
             resume=resume,
             no_llm=no_llm,
+            provider=provider,
         )
     )
 
@@ -142,6 +146,23 @@ def tools() -> None:
     from venice_pt.cli.tools_cmd import list_tools_command
 
     list_tools_command()
+
+
+@app.command()
+def ai(
+    prompt: str = typer.Option(
+        "Respond with 'AIP_SAK AI online' and 1 short sentence.",
+        "--prompt",
+        "-p",
+        help="Test prompt to send to the AI agent",
+    ),
+) -> None:
+    """Check AI agent configuration, live connectivity, model info, and latency."""
+    import asyncio
+
+    from venice_pt.cli.ai_cmd import check_ai_health
+
+    asyncio.run(check_ai_health(prompt=prompt))
 
 
 @app.command()

@@ -75,7 +75,7 @@ class PlannerEngine:
                 role=LLMRole.PLANNER,
                 messages=messages,
                 schema=Decision,
-                max_tokens=1024,
+                max_tokens=2048,
             )
 
             if isinstance(res.parsed, Decision):
@@ -94,7 +94,7 @@ class PlannerEngine:
                 role=LLMRole.PLANNER,
                 messages=repair_messages,
                 schema=Decision,
-                max_tokens=1024,
+                max_tokens=2048,
             )
             if isinstance(repair_res.parsed, Decision):
                 return repair_res.parsed
