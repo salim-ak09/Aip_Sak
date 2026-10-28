@@ -127,43 +127,153 @@ This scaffolds a sandboxed workspace under `engagements/my-pentest/`:
 
 ---
 
-## 💻 Complete Usage Guide
+## 💻 Complete Usage Guide & Command Reference
 
-### Running an Autonomous Assessment
+### CLI Commands Overview
+
+| Command | Description | Example |
+|---|---|---|
+| [`aip-sak init`](#1-initialize-an-engagement-aip-sak-init) | Scaffolds a sandboxed workspace and scope definition | `aip-sak init my-lab --target https://example.com` |
+| [`aip-sak doctor`](#2-system-diagnostics--toolchain-aip-sak-doctor) | Checks prerequisites, OS capability, and security toolchain | `aip-sak doctor --install` |
+| [`aip-sak ai`](#3-ai-agent-diagnostics--latency-test-aip-sak-ai) | Tests AI provider connectivity, model latency, and token response | `aip-sak ai` |
+| [`aip-sak run`](#4-run-autonomous-assessment-aip-sak-run) | Executes the 8-phase autonomous pentest assessment | `aip-sak run --target https://example.com --budget 2` |
+| [`aip-sak status`](#5-live-status--progress-aip-sak-status) | Shows current phase, findings count, spend, and tool states | `aip-sak status --engagement my-lab` |
+| [`aip-sak scope`](#6-inspect-target-scope-aip-sak-scope) | Displays authorized domains, CIDRs, and excluded targets | `aip-sak scope --engagement my-lab` |
+| [`aip-sak tools`](#7-list-registered-security-tools-aip-sak-tools) | Lists all supported scanners, parsers, and binary locations | `aip-sak tools` |
+| [`aip-sak exec`](#8-execute-a-single-tool-via-choke-point-aip-sak-exec) | Executes an isolated tool under strict scope enforcement | `aip-sak exec --tool nmap --args "-sV -p 80,443" --target 127.0.0.1` |
+| [`aip-sak report`](#9-generate-reports-aip-sak-report) | Compiles executive & technical reports (HTML, SARIF, CSV) | `aip-sak report --engagement my-lab --format html,sarif,csv` |
+| [`aip-sak serve`](#10-start-api--dashboard-backend-aip-sak-serve) | Launches the FastAPI REST & WebSocket streaming server | `aip-sak serve --host 127.0.0.1 --port 8000` |
+| [`aip-sak watch`](#11-continuous-247-attack-surface-monitor-aip-sak-watch) | Continuous monitoring daemon for new ports and CVE advisories | `aip-sak watch --target example.com --interval 3600` |
+| [`aip-sak replay`](#12-event-log-replay--forensics-aip-sak-replay) | Replays SQLite event logs and reconstructs graph projections | `aip-sak replay --engagement my-lab` |
+
+---
+
+### Detailed Command Documentation
+
+#### 1. Initialize an Engagement (`aip-sak init`)
+Creates an isolated directory under `engagements/<name>/` with YAML target scoping rules, SQLite append-only log, and checkpoint files.
 ```bash
-# Full autonomous scan with a $2.00 LLM budget cap
-aip-sak run --target http://127.0.0.1:3000 --budget 2 --engagement my-pentest
+# Basic initialization
+aip-sak init my-lab --target https://example.com/
 
-# 100% Deterministic execution (No LLM required / Zero external API calls)
-aip-sak run --target http://127.0.0.1:3000 --no-llm --engagement my-pentest
-
-# Scoped execution for specific phases
-aip-sak run --target http://127.0.0.1:3000 --phases recon,enum,vuln_scan
+# Custom engagement naming
+aip-sak init corporate-audit --target 192.168.1.0/24
 ```
 
-### Executing a Single Tool via Choke Point
-Direct tool runs are validated against scope and rate-limits:
+#### 2. System Diagnostics & Toolchain (`aip-sak doctor`)
+Verifies execution environment, Python dependencies, Docker fallbacks, and security binaries (`nmap`, `subfinder`, `nuclei`, `httpx`, `katana`, `ffuf`, `dnsx`).
 ```bash
-aip-sak exec --tool nmap --args "-sV -p 80,443" --target 127.0.0.1
+# Human-readable diagnostics table
+aip-sak doctor
+
+# Machine-readable JSON output
+aip-sak doctor --json
+
+# Attempt automatic installation of missing binaries
+aip-sak doctor --install
 ```
 
-### Generating Publication Reports
-Compile multi-format deliverables directly from engagement telemetry:
+#### 3. AI Agent Diagnostics & Latency Test (`aip-sak ai`)
+Inspects active AI settings from `.env`, tests live authentication with Google Gemini or OpenAI, and reports response latency, token count, and cost.
 ```bash
-aip-sak report --engagement my-pentest --format html,sarif,csv --output-dir ./reports
+# Run default connectivity check
+aip-sak ai
+
+# Test custom reasoning prompt
+aip-sak ai --prompt "Analyze risk for SQL injection in password reset parameter."
 ```
-- **HTML Report** (`reports/my-pentest_report.html`): Executive summaries, risk distribution cards, confirmed findings with PoC payloads, and demoted finding appendices.
-- **SARIF Standard** (`reports/my-pentest_findings.sarif`): OASIS SARIF v2.1.0 compliant for GitHub Advanced Security and DefectDojo ingestion.
-- **CSV Data** (`reports/my-pentest_findings.csv`): Tabular export with CVSS scores and confidence ratings.
 
-### 24/7 Attack Surface Monitoring Daemon
-Monitor your external surface for drift, open ports, and zero-day CVE banners:
+#### 4. Run Autonomous Assessment (`aip-sak run`)
+Drives the 8-phase finite state machine (`SCOPE` $\rightarrow$ `RECON` $\rightarrow$ `ENUM` $\rightarrow$ `VULN_SCAN` $\rightarrow$ `NOVEL_FUZZ` $\rightarrow$ `VALIDATE` $\rightarrow$ `CHAIN` $\rightarrow$ `REPORT`).
 ```bash
-# Run a single monitoring cycle and exit
-aip-sak watch --target 127.0.0.1 --once
+# Standard autonomous run with budget governor ($2.00 max spend)
+aip-sak run --target https://example.com/ --budget 2
 
-# Run continuous background monitoring daemon (hourly sweeps)
-aip-sak watch --target 127.0.0.1 --interval 3600
+# Explicitly link to an initialized workspace
+aip-sak run --engagement my-lab --target https://example.com/ --budget 2
+
+# Select specific AI provider (gemini, openai, ollama)
+aip-sak run --target https://example.com/ --provider gemini --budget 1.5
+
+# 100% Deterministic mode (Zero external AI calls, pure security heuristics)
+aip-sak run --target https://example.com/ --no-llm
+
+# Resume an interrupted or paused scan from last checkpoint
+aip-sak run --resume --target https://example.com/
+
+# Run only designated phases
+aip-sak run --target https://example.com/ --phases recon,enum,vuln_scan
+
+# Set risk ceiling (passive, safe, intrusive, destructive)
+aip-sak run --target https://example.com/ --risk safe
+```
+
+#### 5. Live Status & Progress (`aip-sak status`)
+Inspects engagement health, observed facts count, confirmed vulnerabilities, and budget consumed.
+```bash
+aip-sak status --engagement my-lab
+```
+
+#### 6. Inspect Target Scope (`aip-sak scope`)
+Validates authorized scope boundaries, including CIDR blocks, allowed domain regex patterns, and excluded assets.
+```bash
+aip-sak scope --engagement my-lab
+```
+
+#### 7. List Registered Security Tools (`aip-sak tools`)
+Displays all integrated security scanners, their risk category, capability flags, and installation path.
+```bash
+aip-sak tools
+```
+
+#### 8. Execute a Single Tool via Choke Point (`aip-sak exec`)
+Runs an individual tool through the secure execution runner, validating input flags and target scope before firing subprocesses.
+```bash
+# Run Nmap service detection
+aip-sak exec --tool nmap --args "-sV -p 80,443" --target 127.0.0.1 --engagement my-lab
+
+# Run Subfinder subdomain discovery
+aip-sak exec --tool subfinder --args "-silent" --target example.com --engagement my-lab
+```
+
+#### 9. Generate Reports (`aip-sak report`)
+Transforms raw event telemetry and the knowledge graph into publication-grade deliverables.
+```bash
+# Generate all report formats into ./reports/
+aip-sak report --engagement my-lab --format html,sarif,csv --output-dir ./reports
+
+# Generate only executive HTML report
+aip-sak report --engagement my-lab --format html
+```
+
+#### 10. Start API & Dashboard Backend (`aip-sak serve`)
+Starts the FastAPI application with live WebSocket event streaming, operator chat endpoints, and REST API controllers.
+```bash
+# Default on localhost:8000
+aip-sak serve
+
+# Custom host and port
+aip-sak serve --host 0.0.0.0 --port 8080
+```
+
+#### 11. Continuous 24/7 Attack Surface Monitor (`aip-sak watch`)
+Monitors target hosts over time, alerting on newly discovered ports, web technology changes, and emerging CVE vulnerabilities.
+```bash
+# Single sweep and exit
+aip-sak watch --target example.com --once
+
+# Continuous hourly sweep
+aip-sak watch --target example.com --interval 3600
+```
+
+#### 12. Event Log Replay & Forensics (`aip-sak replay`)
+Replays past engagement event logs to audit decision paths, verify data integrity, or test new parser logic without re-scanning.
+```bash
+# Replay live engagement events
+aip-sak replay --engagement my-lab
+
+# Replay demo synthetic event log
+aip-sak replay --demo
 ```
 
 ---
