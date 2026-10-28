@@ -80,7 +80,7 @@ def doctor(
 
 @app.command()
 def run(
-    target: str = typer.Option(..., "--target", "-t", help="Target URL, IP or domain"),
+    target: str | None = typer.Option(None, "--target", "-t", help="Target URL, IP or domain"),
     engagement: str | None = typer.Option(None, "--engagement", "-e", help="Engagement name"),
     profile: str = typer.Option(
         "web", "--profile", "-p", help="Engagement profile (web, network, full)"
@@ -102,8 +102,51 @@ def run(
         None, "--provider", help="LLM provider: openai, gemini, ollama, or custom"
     ),
 ) -> None:
-    """Run an automated pentest engagement."""
+    """Run an automated pentest engagement with interactive configuration wizard."""
+    from rich.panel import Panel
+    from rich.prompt import FloatPrompt, Prompt
+
     from venice_pt.cli.run_cmd import run_engagement
+
+    # If target is not provided, launch interactive visual configuration wizard
+    if not target:
+        console.print(
+            Panel(
+                "[bold cyan]🛡️ AIP_SAK Autonomous Penetration Test Configurator[/bold cyan]\n"
+                "[dim]Configure your target and autonomous attack parameters below.[/dim]",
+                border_style="cyan",
+            )
+        )
+        target = Prompt.ask(
+            "[bold green]Enter Target URL or IP[/bold green]",
+            default="https://exemple.com/",
+        )
+        default_eng = (
+            target.replace("http://", "").replace("https://", "").split("/")[0].replace(".", "-")
+        )
+        engagement = Prompt.ask(
+            "[bold green]Engagement Name/Workspace[/bold green]",
+            default=default_eng,
+        )
+        profile = Prompt.ask(
+            "[bold green]Attack Profile[/bold green]",
+            choices=["web", "network", "full"],
+            default="web",
+        )
+        risk = Prompt.ask(
+            "[bold green]Risk Ceiling[/bold green]",
+            choices=["passive", "safe", "intrusive", "destructive"],
+            default="safe",
+        )
+        budget = FloatPrompt.ask("[bold green]Spend Budget Cap (USD)[/bold green]", default=2.0)
+        provider = Prompt.ask(
+            "[bold green]AI Reasoning Engine[/bold green]",
+            choices=["gemini", "openai", "none (pure deterministic)"],
+            default="gemini",
+        )
+        if provider.startswith("none"):
+            no_llm = True
+            provider = None
 
     asyncio.run(
         run_engagement(
@@ -217,6 +260,19 @@ def serve(
 
     console.print(f"[bold green]Serving API and WebSockets on {host}:{port}...[/bold green]")
     serve_api(host=host, port=port)
+
+
+@app.command()
+def web(
+    host: str = typer.Option("127.0.0.1", "--host", help="Backend server host"),
+    api_port: int = typer.Option(8000, "--api-port", help="Backend API port"),
+    ui_port: int = typer.Option(5173, "--ui-port", help="Frontend UI port"),
+    no_browser: bool = typer.Option(False, "--no-browser", help="Don't open browser automatically"),
+) -> None:
+    """Start the Web Command Center immediately and open the dashboard."""
+    from venice_pt.cli.web_cmd import run_web
+
+    run_web(host=host, api_port=api_port, ui_port=ui_port, no_browser=no_browser)
 
 
 @app.command()

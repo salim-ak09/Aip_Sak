@@ -10,7 +10,9 @@ import {
   Crosshair,
   Send,
   Bot,
-  Zap
+  Zap,
+  ListFilter,
+  Layers,
 } from 'lucide-react'
 
 const PHASES = [
@@ -23,6 +25,16 @@ const PHASES = [
   'chain',
   'report',
 ]
+
+interface AttackItem {
+  name: string
+  target: string
+  phase: string
+  status: string
+  findings_count: number
+  budget_spent: number
+  path: string
+}
 
 interface Finding {
   id: string
@@ -39,12 +51,12 @@ interface ChatMessage {
 }
 
 export function App() {
-  const [engagements, setEngagements] = useState<string[]>([])
-  const [selectedEng, setSelectedEng] = useState<string>('autonomous-test')
-  const [target, setTarget] = useState<string>('http://127.0.0.1:3000')
+  const [attacks, setAttacks] = useState<AttackItem[]>([])
+  const [selectedEng, setSelectedEng] = useState<string>('my-lab')
+  const [target, setTarget] = useState<string>('https://exemple.com/')
   const [currentPhase, setCurrentPhase] = useState<string>('recon')
   const [status, setStatus] = useState<string>('running')
-  const [budgetSpent] = useState<number>(0.12)
+  const [budgetSpent, setBudgetSpent] = useState<number>(0.0)
   const [logs, setLogs] = useState<string[]>([])
   const [findings, setFindings] = useState<Finding[]>([])
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
@@ -54,11 +66,31 @@ export function App() {
     },
   ])
   const [inputOrder, setInputOrder] = useState<string>('')
-  const [activeTab, setActiveTab] = useState<'stream' | 'chat'>('chat')
+  const [activeTab, setActiveTab] = useState<'attacks' | 'stream' | 'chat'>('attacks')
+  const [selectedAttackDetails, setSelectedAttackDetails] = useState<any>(null)
   const logsEndRef = useRef<HTMLDivElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
-  // 1. Fetch live engagement data from backend
+  // 1. Fetch live attacks list from backend
+  const loadAttacksList = async () => {
+    try {
+      const res = await fetch('/api/engagements', {
+        headers: { Authorization: 'Bearer venice-secret-token' },
+      })
+      if (res.ok) {
+        const list: AttackItem[] = await res.json()
+        setAttacks(list)
+        if (list.length > 0 && !selectedEng) {
+          setSelectedEng(list[0].name)
+          fetchEngagementData(list[0].name)
+        }
+      }
+    } catch {
+      // offline fallback
+    }
+  }
+
+  // 2. Fetch specific engagement details
   const fetchEngagementData = async (engName: string) => {
     try {
       const res = await fetch(`/api/engagements/${engName}`, {
@@ -66,41 +98,33 @@ export function App() {
       })
       if (res.ok) {
         const data = await res.json()
+        setSelectedAttackDetails(data)
         if (data.target) setTarget(data.target)
-        if (data.phase) setCurrentPhase(data.phase)
+        if (data.current_phase || data.phase) setCurrentPhase(data.current_phase || data.phase)
         if (data.status) setStatus(data.status)
+        if (data.budget_spent_usd !== undefined) setBudgetSpent(data.budget_spent_usd)
         if (data.findings && Array.isArray(data.findings)) setFindings(data.findings)
         if (data.chat_history && Array.isArray(data.chat_history)) setChatMessages(data.chat_history)
+        if (data.recent_events && Array.isArray(data.recent_events) && logs.length === 0) {
+          const loadedLogs = data.recent_events.map((e: any) => `[${e.phase?.toUpperCase() || 'INFO'}] ${e.kind}: ${JSON.stringify(e.payload || {})}`)
+          setLogs(loadedLogs)
+        }
       }
     } catch {
-      // Fallback in case backend is offline
+      // Fallback
     }
   }
 
-  // Fetch list of engagements
   useEffect(() => {
-    const loadEngagements = async () => {
-      try {
-        const res = await fetch('/api/engagements', {
-          headers: { Authorization: 'Bearer venice-secret-token' },
-        })
-        if (res.ok) {
-          const list = await res.json()
-          const names = list.map((item: { name: string }) => item.name)
-          if (names.length > 0) {
-            setEngagements(names)
-            setSelectedEng(names[0])
-            fetchEngagementData(names[0])
-          }
-        }
-      } catch {
-        // Dev fallback
-      }
-    }
-    loadEngagements()
-  }, [])
+    loadAttacksList()
+    const poll = setInterval(() => {
+      loadAttacksList()
+      if (selectedEng) fetchEngagementData(selectedEng)
+    }, 3000)
+    return () => clearInterval(poll)
+  }, [selectedEng])
 
-  // 2. Real-time WebSocket event connection
+  // 3. Real-time WebSocket connection
   useEffect(() => {
     const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsUrl = `${wsProto}//${window.location.host}/ws`
@@ -141,13 +165,8 @@ export function App() {
       // ws fallback
     }
 
-    const interval = setInterval(() => {
-      if (selectedEng) fetchEngagementData(selectedEng)
-    }, 4000)
-
     return () => {
       if (ws) ws.close()
-      clearInterval(interval)
     }
   }, [selectedEng])
 
@@ -191,7 +210,7 @@ export function App() {
     }
   }
 
-  // Operator Chat / Give Directives to AI Agent
+  // Send Directive
   const sendOperatorDirective = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!inputOrder.trim()) return
@@ -223,7 +242,6 @@ export function App() {
         }
       }
     } catch {
-      // Offline fallback
       setTimeout(() => {
         setChatMessages((prev) => [
           ...prev,
@@ -234,6 +252,15 @@ export function App() {
         ])
       }, 500)
     }
+  }
+
+  const selectAttackRow = (attack: AttackItem) => {
+    setSelectedEng(attack.name)
+    setTarget(attack.target)
+    setCurrentPhase(attack.phase)
+    setStatus(attack.status)
+    setBudgetSpent(attack.budget_spent)
+    fetchEngagementData(attack.name)
   }
 
   return (
@@ -247,10 +274,10 @@ export function App() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span className="brand-name">AIP_SAK</span>
-              <span className="badge-tag">AUTONOMOUS AGENT</span>
+              <span className="badge-tag">AUTONOMOUS COMMAND CENTER</span>
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              AI Penetration Testing & Exploit Orchestrator
+              Live AI Penetration Testing & Continuous Surface Security
             </div>
           </div>
         </div>
@@ -316,36 +343,40 @@ export function App() {
 
             <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--border)' }}>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 6 }}>
-                Active Engagement
+                Selected Engagement
               </div>
-              <select
-                value={selectedEng}
-                onChange={(e) => {
-                  setSelectedEng(e.target.value)
-                  fetchEngagementData(e.target.value)
-                }}
-                style={{ width: '100%', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid var(--border)', padding: '6px 10px', borderRadius: 6, fontSize: '0.8rem', outline: 'none' }}
-              >
-                {engagements.map((e) => (
-                  <option key={e} value={e}>
-                    {e}
-                  </option>
-                ))}
-                {engagements.length === 0 && <option value="autonomous-test">autonomous-test</option>}
-              </select>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', marginBottom: 12 }}>
+                {selectedEng}
+              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, fontSize: '0.8rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Budget Governor</span>
-                <span style={{ fontWeight: 700, color: '#10b981' }}>${budgetSpent.toFixed(2)} / $5.00</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 6 }}>
+                <span style={{ color: 'var(--text-muted)' }}>Spend Governor</span>
+                <span style={{ fontWeight: 700, color: '#10b981' }}>${budgetSpent.toFixed(4)} / $5.00</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Active Attacks</span>
+                <span style={{ fontWeight: 700, color: '#06b6d4' }}>{attacks.filter(a => a.status === 'running').length} running</span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Center: Live Terminal & AI Agent Dialogue */}
+        {/* Center: Live Attacks Table & Console Tabs */}
         <section className="cyber-card">
-          <div className="card-header" style={{ display: 'flex', gap: 10 }}>
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                className="btn-ghost"
+                style={{
+                  background: activeTab === 'attacks' ? 'rgba(6, 182, 212, 0.2)' : 'transparent',
+                  borderColor: activeTab === 'attacks' ? 'var(--accent-cyan)' : 'transparent',
+                  fontSize: '0.75rem',
+                  padding: '4px 10px',
+                }}
+                onClick={() => setActiveTab('attacks')}
+              >
+                <ListFilter size={14} color="#06b6d4" /> Live Attacks ({attacks.length})
+              </button>
               <button
                 className="btn-ghost"
                 style={{
@@ -356,26 +387,83 @@ export function App() {
                 }}
                 onClick={() => setActiveTab('chat')}
               >
-                <Bot size={14} color="#6366f1" /> AI Agent Dialogue
+                <Bot size={14} color="#6366f1" /> AI Agent Chat
               </button>
               <button
                 className="btn-ghost"
                 style={{
-                  background: activeTab === 'stream' ? 'rgba(6, 182, 212, 0.2)' : 'transparent',
-                  borderColor: activeTab === 'stream' ? 'var(--accent-cyan)' : 'transparent',
+                  background: activeTab === 'stream' ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
+                  borderColor: activeTab === 'stream' ? 'var(--accent-green)' : 'transparent',
                   fontSize: '0.75rem',
                   padding: '4px 10px',
                 }}
                 onClick={() => setActiveTab('stream')}
               >
-                <Terminal size={14} color="#06b6d4" /> Live Execution Stream
+                <Terminal size={14} color="#10b981" /> Execution Stream
               </button>
             </div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Interactive Console</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Real-Time Telemetry</span>
           </div>
 
           <div className="card-body" style={{ padding: 14 }}>
-            {activeTab === 'chat' ? (
+            {activeTab === 'attacks' && (
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
+                <table className="attacks-table">
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th>Engagement</th>
+                      <th>Target</th>
+                      <th>Phase</th>
+                      <th>Findings</th>
+                      <th>Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attacks.map((att) => {
+                      const isSelected = att.name === selectedEng
+                      const isRunning = att.status === 'running'
+                      return (
+                        <tr
+                          key={att.name}
+                          className={isSelected ? 'selected' : ''}
+                          onClick={() => selectAttackRow(att)}
+                        >
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {isRunning ? <span className="pulse-dot" /> : <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: att.status === 'completed' ? '#06b6d4' : '#64748b', display: 'inline-block' }} />}
+                              <span style={{ fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', color: isRunning ? '#10b981' : 'var(--text-muted)' }}>
+                                {att.status}
+                              </span>
+                            </div>
+                          </td>
+                          <td style={{ fontWeight: 700 }}>{att.name}</td>
+                          <td><code>{att.target}</code></td>
+                          <td>
+                            <span className="badge-tag" style={{ textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                              {att.phase}
+                            </span>
+                          </td>
+                          <td style={{ fontWeight: 700, color: att.findings_count > 0 ? '#f43f5e' : 'inherit' }}>
+                            {att.findings_count}
+                          </td>
+                          <td style={{ color: '#10b981' }}>${att.budget_spent.toFixed(4)}</td>
+                        </tr>
+                      )
+                    })}
+                    {attacks.length === 0 && (
+                      <tr>
+                        <td colSpan={6} style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+                          No engagements discovered yet. Run <code>aip-sak run --target &lt;URL&gt;</code> to begin.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {activeTab === 'chat' && (
               <div className="chat-window">
                 <div className="chat-history">
                   {chatMessages.map((msg, i) => (
@@ -402,7 +490,9 @@ export function App() {
                   </button>
                 </form>
               </div>
-            ) : (
+            )}
+
+            {activeTab === 'stream' && (
               <div className="terminal-window">
                 {logs.length === 0 ? (
                   <div style={{ color: 'var(--text-muted)' }}>Waiting for live execution events...</div>
@@ -410,13 +500,12 @@ export function App() {
                   logs.map((log, i) => (
                     <div
                       key={i}
-                      className={`terminal-line ${
-                        log.includes('[VULNERABILITY]')
+                      className={`terminal-line ${log.includes('[VULNERABILITY]')
                           ? 'finding'
                           : log.includes('[FACT]')
-                          ? 'fact'
-                          : ''
-                      }`}
+                            ? 'fact'
+                            : ''
+                        }`}
                     >
                       {log}
                     </div>
@@ -428,41 +517,96 @@ export function App() {
           </div>
         </section>
 
-        {/* Right: Verified Findings Drawer */}
+        {/* Right: Selected Attack Deep-Dive & Findings */}
         <section className="cyber-card">
           <div className="card-header">
-            <span>Verified Findings ({findings.length})</span>
-            <AlertTriangle size={16} color="#f43f5e" />
+            <span>Engagement Inspector</span>
+            <Layers size={16} color="#06b6d4" />
           </div>
-          <div className="card-body">
-            {findings.length === 0 ? (
-              <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 40, fontSize: '0.85rem' }}>
-                No vulnerabilities verified yet.
-                <div style={{ fontSize: '0.75rem', marginTop: 8 }}>
-                  Agent is actively scanning and validating candidate hypotheses.
+          <div className="card-body" style={{ overflowY: 'auto' }}>
+            {selectedAttackDetails ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="detail-block">
+                  <div className="detail-label">Engagement Workspace</div>
+                  <div className="detail-val" style={{ fontWeight: 700, color: '#06b6d4' }}>
+                    {selectedAttackDetails.name || selectedEng}
+                  </div>
+                </div>
+
+                <div className="detail-block">
+                  <div className="detail-label">Target URL / Domain</div>
+                  <div className="detail-val">{selectedAttackDetails.target || target}</div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div className="detail-block">
+                    <div className="detail-label">Current Phase</div>
+                    <div className="detail-val" style={{ textTransform: 'uppercase', color: '#a5b4fc', fontWeight: 700 }}>
+                      {selectedAttackDetails.current_phase || currentPhase}
+                    </div>
+                  </div>
+                  <div className="detail-block">
+                    <div className="detail-label">Status</div>
+                    <div className="detail-val" style={{ textTransform: 'uppercase', color: status === 'running' ? '#10b981' : '#f59e0b', fontWeight: 700 }}>
+                      {selectedAttackDetails.status || status}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div className="detail-block">
+                    <div className="detail-label">Facts Observed</div>
+                    <div className="detail-val">{selectedAttackDetails.facts_count || 0} facts</div>
+                  </div>
+                  <div className="detail-block">
+                    <div className="detail-label">Findings Verified</div>
+                    <div className="detail-val" style={{ color: '#f43f5e', fontWeight: 700 }}>
+                      {selectedAttackDetails.findings_count || findings.length} issues
+                    </div>
+                  </div>
+                </div>
+
+                {selectedAttackDetails.scope?.include?.domains && (
+                  <div className="detail-block">
+                    <div className="detail-label">Authorized Domains Scope</div>
+                    <div className="detail-val">
+                      {selectedAttackDetails.scope.include.domains.join(', ') || 'All in-scope'}
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <AlertTriangle size={14} color="#f43f5e" /> Verified Findings ({findings.length})
+                  </div>
+                  {findings.length === 0 ? (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.2)', padding: 12, borderRadius: 8, textAlign: 'center' }}>
+                      No verified vulnerabilities yet.
+                    </div>
+                  ) : (
+                    findings.map((f, i) => (
+                      <div key={f.id || i} className="finding-item" style={{ marginBottom: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <span className={`badge-sev sev-${f.severity?.toLowerCase() || 'high'}`}>
+                            {f.severity || 'HIGH'}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <CheckCircle2 size={12} /> VERIFIED
+                          </span>
+                        </div>
+                        <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>{f.title}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                          <code>{f.target}</code>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             ) : (
-              findings.map((f, i) => (
-                <div key={f.id || i} className="finding-item">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <span className={`badge-sev sev-${f.severity?.toLowerCase() || 'medium'}`}>
-                      {f.severity || 'HIGH'}
-                    </span>
-                    <span style={{ fontSize: '0.72rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <CheckCircle2 size={12} /> VERIFIED ORACLE
-                    </span>
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', marginBottom: 4 }}>{f.title}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    <code>{f.target}</code>
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 8, display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Confidence: <strong>{((f.confidence || 0.9) * 100).toFixed(0)}%</strong></span>
-                    <span style={{ color: '#a5b4fc' }}>PoC Verified</span>
-                  </div>
-                </div>
-              ))
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 40, fontSize: '0.85rem' }}>
+                Select an attack from the table to inspect details.
+              </div>
             )}
           </div>
         </section>

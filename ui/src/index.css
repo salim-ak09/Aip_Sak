@@ -375,3 +375,91 @@ code, pre, .mono {
 .btn-ghost:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* Attacks Table Styling */
+.attacks-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.attacks-table th {
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--text-muted);
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+}
+
+.attacks-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.attacks-table tr {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.attacks-table tr:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.attacks-table tr.selected {
+  background: rgba(6, 182, 212, 0.15);
+  border-left: 3px solid var(--accent-cyan);
+}
+
+/* Pulse animation for active running scans */
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #10b981;
+  display: inline-block;
+  box-shadow: 0 0 0 rgba(16, 185, 129, 0.6);
+  animation: pulse-ring 1.8s infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.detail-block {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.detail-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.detail-val {
+  font-size: 0.85rem;
+  color: #fff;
+  word-break: break-all;
+}

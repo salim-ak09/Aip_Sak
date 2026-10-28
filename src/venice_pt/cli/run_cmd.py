@@ -59,7 +59,7 @@ async def run_engagement(
 
     eng_dir = config.engagements_dir / slug
 
-    if not eng_dir.exists():
+    if not eng_dir.exists() or not (eng_dir / "scope.yaml").exists():
         init_engagement(name=slug, target=target)
 
     db_path = eng_dir / "events.db"

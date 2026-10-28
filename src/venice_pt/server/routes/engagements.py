@@ -32,12 +32,20 @@ def list_engagements() -> list[dict[str, Any]]:
         if p.is_dir():
             state_file = p / "state.json"
             target = "unknown"
-            phase = "unknown"
+            phase = "recon"
+            status = "ready"
+            findings_count = 0
+            budget_spent = 0.0
+            last_event_id = None
             if state_file.exists():
                 try:
                     data = json.loads(state_file.read_text(encoding="utf-8"))
                     target = data.get("target", target)
-                    phase = data.get("phase", phase)
+                    phase = data.get("current_phase") or data.get("phase", phase)
+                    status = data.get("status", status)
+                    findings_count = data.get("findings_count") or len(data.get("findings", []))
+                    budget_spent = data.get("budget_spent_usd") or data.get("budget_spent", 0.0)
+                    last_event_id = data.get("last_event_id")
                 except Exception:
                     pass
             results.append(
@@ -45,6 +53,10 @@ def list_engagements() -> list[dict[str, Any]]:
                     "name": p.name,
                     "target": target,
                     "phase": phase,
+                    "status": status,
+                    "findings_count": findings_count,
+                    "budget_spent": budget_spent,
+                    "last_event_id": last_event_id,
                     "path": str(p),
                 }
             )
@@ -134,13 +146,32 @@ def get_engagement(name: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="Engagement not found")
 
     state_file = eng_dir / "state.json"
-    if not state_file.exists():
-        return {"name": name, "state": "initialized"}
-
     try:
-        data = json.loads(state_file.read_text(encoding="utf-8"))
-        if isinstance(data, dict):
-            return dict(data)
-        return {"name": name, "state": data}
+        data = json.loads(state_file.read_text(encoding="utf-8")) if state_file.exists() else {}
+        scope_file = eng_dir / "scope.yaml"
+        scope_data: dict[str, Any] = {}
+        if scope_file.exists():
+            try:
+                import yaml
+                scope_data = yaml.safe_load(scope_file.read_text(encoding="utf-8")) or {}
+            except Exception:
+                pass
+
+        # Load recent events from sqlite if available
+        events_list: list[dict[str, Any]] = []
+        db_file = eng_dir / "events.db"
+        if db_file.exists():
+            try:
+                from venice_pt.store.eventlog import EventLog
+                elog = EventLog(db_file)
+                evts = elog.get_events(engagement_id=name)
+                events_list = [e.model_dump() for e in evts[-50:]]
+            except Exception:
+                pass
+
+        data["name"] = name
+        data["scope"] = scope_data
+        data["recent_events"] = events_list
+        return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to read state: {e}")

@@ -27,12 +27,12 @@ class ScopeDefinition:
     @classmethod
     def from_yaml(cls, content_or_path: str | Path) -> ScopeDefinition:
         if isinstance(content_or_path, Path):
-            text = content_or_path.read_text(encoding="utf-8")
+            text = content_or_path.read_text(encoding="utf-8") if content_or_path.exists() else ""
         elif "\n" in content_or_path or ":" in content_or_path:
             text = content_or_path
         else:
             p = Path(content_or_path)
-            text = p.read_text(encoding="utf-8") if p.exists() else content_or_path
+            text = p.read_text(encoding="utf-8") if p.exists() else ""
 
         data = yaml.safe_load(text) or {}
         inc = data.get("include", {})
