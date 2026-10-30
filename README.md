@@ -106,7 +106,7 @@ Generic "AI agent" pentesting frameworks frequently hallucinate nonexistent flag
 ```bash
 # Clone the repository
 git clone https://github.com/your-org/aip-sak.git
-cd aip-sak
+cd Aip-Sak
 
 # Install Python package and dev dependencies
 python -m pip install -e ".[dev]"
